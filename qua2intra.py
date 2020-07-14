@@ -35,7 +35,7 @@ def write_intra_conf(path, arcs, meta):
     conf["tags"] = ['Other']  # TODO extract from yaml
     conf["handCount"] = 1
     conf["moreInfoURL"] = ""
-    conf["speed"] = speed_magic(meta["arccount"], meta["length"])  # TODO yea, something more adaptive
+    conf["speed"] = speed_magic(meta["arccount"], meta["length"])
     conf["lives"] = 50
     conf["maxLives"] = conf["lives"]
     conf["musicFile"] = SONG_NAME
