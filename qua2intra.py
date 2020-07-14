@@ -3,6 +3,7 @@ import yaml
 import os
 from mutagen.mp3 import MP3
 from shutil import copyfile
+from config import *
 
 DIR_LEFT = 0x01
 DIR_UP = 0x02
@@ -14,10 +15,6 @@ I_STRINGS = ["", "[Left]", "[Up]", "[Up-Left]",
              "[Down]", "[Down-Left]", "[Up-Down]", "[Up-Down-Left]",
              "[Right]", "[Right-Left]", "[Up-Right]", "[Up-Right-Left]",
              "[Right-Down]", "[Right-Down-Left]", "[Up-Right-Down]", "[Up-Right-Down-Left]"]
-
-STEAMPATH = "/home/kovlev/.local/share/Steam/"  # TODO
-INTRAPATH = os.path.join(STEAMPATH, "steamapps/common/Intralism/Editor/")
-QUAVERPATH = os.path.join(STEAMPATH, "steamapps/common/Quaver/Songs/")
 
 SONG_NAME = "music.ogg"
 ICON_NAME = "icon.png"
@@ -101,4 +98,5 @@ def convert_folder(foldername):
             copyfile(os.path.join(folder, meta["image"]), os.path.join(destpath, ICON_NAME))
 
 # example call
-convert_folder("972 - 403")
+if __name__ == "__main__":
+    convert_folder("972 - 403")
