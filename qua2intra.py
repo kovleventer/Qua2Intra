@@ -2,6 +2,7 @@ import json
 import yaml
 import os
 from mutagen.mp3 import MP3
+from shutil import copyfile
 
 DIR_LEFT = 0x01
 DIR_UP = 0x02
@@ -18,21 +19,28 @@ STEAMPATH = "/home/kovlev/.local/share/Steam/"  # TODO
 INTRAPATH = os.path.join(STEAMPATH, "steamapps/common/Intralism/Editor/")
 QUAVERPATH = os.path.join(STEAMPATH, "steamapps/common/Quaver/Songs/")
 
+SONG_NAME = "music.ogg"
+ICON_NAME = "icon.png"
+
+def speed_magic(arc_cnt, length):
+    # TODO better handling
+    return min(arc_cnt // length + 20, 36)
+
 def write_intra_conf(path, arcs, meta):
     conf = {}
     conf["configVersion"] = 2
     conf["name"] = meta['title']
-    conf["info"] = "auto generated lol"  # TODO difficulty, length and stuff
+    conf["info"] = "Map automatically converted from Quaver"  # TODO difficulty, length and stuff
     conf["levelResources"] = []  # TODO at least simple bg
-    conf["tags"] = ['Other']  # TODO exctract from yaml
+    conf["tags"] = ['Other']  # TODO extract from yaml
     conf["handCount"] = 1
     conf["moreInfoURL"] = ""
-    conf["speed"] = 27  # TODO yea, something more adaptive
+    conf["speed"] = speed_magic(meta["arccount"], meta["length"])  # TODO yea, something more adaptive
     conf["lives"] = 50
     conf["maxLives"] = conf["lives"]
-    conf["musicFile"] = "music.ogg"
+    conf["musicFile"] = SONG_NAME
     conf["musicTime"] = meta["length"]
-    conf["iconFile"] = "icon.png"
+    conf["iconFile"] = ICON_NAME
     conf["environmentType"] = -1
     conf["unlockConditions"] = []
     conf["hidden"] = False
@@ -52,7 +60,10 @@ def load_qua(path):
 
     arcs = {}
     for hitObject in y['HitObjects']:
-        t = hitObject['StartTime']
+        if 'StartTime' in hitObject:
+            t = hitObject['StartTime']
+        else:
+            t = 0
         lane = Q_LANES[hitObject['Lane']]
         if t in arcs:
             arcs[t] = arcs[t] | lane
@@ -63,6 +74,8 @@ def load_qua(path):
     meta["title"] = y['Artist'] + " - " + y['Title'] + " (" + y['DifficultyName'] + ")"
     meta["song"] = y["AudioFile"]
     meta["image"] = y["BackgroundFile"]
+    meta["arccount"] = len(y['HitObjects'])
+    meta["valid"] = (y["Mode"] == "Keys4")
 
     return arcs, meta
 
@@ -73,14 +86,19 @@ def convert_folder(foldername):
             arcs, meta = load_qua(os.path.join(folder, file))
             h = abs(hash(frozenset(arcs.items())))
             destpath = os.path.join(INTRAPATH, str(h))
+
+            if not meta["valid"]:
+                print("Skipping invalid song: " + meta["title"])
+                continue
+
             try:
                 os.mkdir(destpath)
             except OSError:
                 pass
             meta["length"] = MP3(os.path.join(folder, meta["song"])).info.length
             write_intra_conf(os.path.join(destpath, "config.txt"), arcs, meta)
-            os.system("ffmpeg -i \"" + os.path.join(folder, meta["song"]) + "\" -c:a libvorbis -q:a 4 " + os.path.join(destpath, "music.ogg")) # TODO multiplatform
-            os.system("cp \"" + os.path.join(folder, meta["image"]) + "\" " + os.path.join(destpath, "icon.png")) # TODO
+            os.system("ffmpeg -i \"" + os.path.join(folder, meta["song"]) + "\" -c:a libvorbis -q:a 4 " + os.path.join(destpath, SONG_NAME)) # TODO multiplatform
+            copyfile(os.path.join(folder, meta["image"]), os.path.join(destpath, ICON_NAME))
 
 # example call
 convert_folder("972 - 403")
